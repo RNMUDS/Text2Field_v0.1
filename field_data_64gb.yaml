@@ -1,0 +1,19 @@
+names:
+- 18Yard
+- 18Yard Circle
+- 5Yard
+- First Half Central Circle
+- First Half Field
+- Second Half Central Circle
+- Second Half Field
+nc: 7
+path: /Users/rn/Documents/FC/Text2Field/field-6
+roboflow:
+  license: CC BY 4.0
+  project: field-xzc0o
+  url: https://universe.roboflow.com/yssp/field-xzc0o/dataset/6
+  version: 6
+  workspace: yssp
+test: ../test/images
+train: ../train/images
+val: ../valid/images

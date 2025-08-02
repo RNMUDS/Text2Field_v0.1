@@ -1,0 +1,28 @@
+# Core dependencies
+ultralytics>=8.3.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+matplotlib>=3.7.0
+Pillow>=10.0.0
+
+# Jupyter support
+notebook>=7.0.0
+ipywidgets>=8.0.0
+
+# Data handling
+pyyaml>=6.0
+pandas>=2.0.0
+
+# System monitoring
+psutil>=5.9.0
+
+# Roboflow (optional, for dataset download)
+roboflow>=1.1.0
+
+# PyTorch (auto-installed by ultralytics, but specify for clarity)
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Additional utilities
+tqdm>=4.65.0
+scipy>=1.10.0
