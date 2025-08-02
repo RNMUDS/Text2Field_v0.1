@@ -1,137 +1,123 @@
 # Text2Field v0.1
 
-A computer vision project for detecting and segmenting soccer field elements using both classical CV and deep learning approaches.
+サッカーフィールドの要素を検出・セグメンテーションするコンピュータビジョンプロジェクト
 
-## Overview
+## 概要
 
-Text2Field is designed to identify and segment various components of a soccer field from images and videos, including:
-- Field boundaries (First/Second half)
-- Central circles
-- 18-yard boxes and circles
-- 5-yard boxes
+Text2Fieldは、サッカーフィールドの様々な要素を画像から検出・セグメンテーションするプロジェクトです。従来の画像処理手法と深層学習の両方のアプローチを実装しています。
 
-The project implements two approaches:
-1. **Classical Computer Vision**: HSV-based detection with ellipse fitting
-2. **Deep Learning**: YOLOv8 segmentation model with adaptive training
+## なぜ深層学習が必要か？
 
-## Features
+`cv_ellipse_detection.py`で実装されている従来の画像処理手法（HSVカラースペースとエッジ検出）では、以下の理由により精度が低いことが判明しました：
 
-- 🎯 Multi-class segmentation of soccer field elements
-- 🚀 Automatic hardware adaptation for training (CPU/MPS/CUDA)
-- 💾 Memory-aware batch size and model selection
-- 📊 Interactive Jupyter interface for inference
-- 🔧 Pre-trained models available
+- 照明条件の変化に弱い
+- フィールドの色のばらつきに対応できない
+- ノイズや影の影響を受けやすい
+- 部分的に隠れた円の検出が困難
 
-## Installation
+そのため、より堅牢な深層学習アプローチ（YOLOv8）を採用しています。
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/Text2Field_v0.1.git
-cd Text2Field_v0.1
+## Roboflowでサッカー関連データセットを探す
 
-# Install dependencies
-pip install -r requirements.txt
-```
+[Roboflow Universe](https://universe.roboflow.com/)では、サッカー関連の様々なデータセットやモデルが公開されています：
 
-## Quick Start
+- サッカーフィールドのセグメンテーション
+- プレイヤー検出
+- ボール追跡
+- ゴール検出
 
-### Using Pre-trained Model
+検索キーワード例：`soccer field`, `football pitch`, `soccer segmentation`
+
+## プロジェクトの使い方
+
+### 1. 推論を実行する（DL_ellipse_detection.ipynb）
+
+学習済みモデルを使って推論を実行：
 
 ```python
-# In Jupyter notebook
+# DL_ellipse_detection.ipynbを開いて実行
 from ultralytics import YOLO
 
-# Load the model
-model = YOLO('runs/segment/field_seg_64gb_n_20250802_214746/weights/best.pt')
-
-# Run inference
-results = model('sample1.png')
-results[0].show()
+# モデルを自動検出してロード
+results = inference_jupyter("sample1.png")
 ```
 
-### Training Your Own Model
+### 2. 独自のモデルを構築する（DL_learning_model.ipynb）
 
-Open `DL_learning_model.ipynb` and run the adaptive training:
+自分のデータセットでモデルを学習する場合：
 
 ```python
+# DL_learning_model.ipynbを開いて実行
 trainer = YOLOv8MPSTrainerAuto(dataset_path="./field-6")
+
+# システムに応じて自動的に最適化された設定で学習
 model_path, results = trainer.train_adaptive(
-    model_size='auto',  # Automatically selects based on system memory
+    model_size='auto',  # メモリに基づいて自動選択
     epochs=100,
     imgsz=640
 )
 ```
 
-## Project Structure
+## プロジェクト構成
 
 ```
 Text2Field_v0.1/
-├── cv_ellipse_detection.py    # Classical CV approach
-├── DL_ellipse_detection.ipynb # Inference notebook
-├── DL_learning_model.ipynb    # Training notebook
-├── field-6/                   # Dataset directory
-│   ├── train/
-│   ├── valid/
-│   └── test/
-├── sample1.png               # Sample images
+├── cv_ellipse_detection.py     # 従来手法（精度が低い例）
+├── DL_ellipse_detection.ipynb  # 推論用ノートブック
+├── DL_learning_model.ipynb     # モデル学習用ノートブック
+├── field-6/                    # データセット
+│   ├── train/                  # 訓練データ
+│   ├── valid/                  # 検証データ
+│   └── test/                   # テストデータ
+├── sample1.png                 # サンプル画像
 ├── sample2.png
-└── runs/                     # Trained models
+└── runs/                       # 学習済みモデル
 ```
 
-## Dataset
+## 検出可能なクラス
 
-The project uses a Roboflow dataset with 7 classes:
-- 18Yard
-- 18Yard Circle
-- 5Yard
-- First Half Central Circle
-- First Half Field
-- Second Half Central Circle
-- Second Half Field
+- 18ヤードボックス
+- 18ヤード円弧
+- 5ヤードボックス
+- センターサークル（前半）
+- フィールド（前半）
+- センターサークル（後半）
+- フィールド（後半）
 
-Dataset statistics:
-- Training: 2,523 images
-- Validation: 161 images
-- Test: 101 images
+## インストール
 
-## Hardware Requirements
+```bash
+# リポジトリをクローン
+git clone https://github.com/RNMUDS/Text2Field_v0.1.git
+cd Text2Field_v0.1
 
-Minimum:
+# 依存関係をインストール
+pip install -r requirements.txt
+```
+
+## 主な特徴
+
+- 🎯 7クラスのマルチクラスセグメンテーション
+- 🚀 ハードウェアに応じた自動最適化（Apple Silicon/CUDA/CPU）
+- 💾 メモリ容量に基づく自動設定調整
+- 📊 Jupyter環境でのインタラクティブな推論
+- 🔧 学習済みモデル付属
+
+## システム要件
+
+最小要件：
 - 8GB RAM
-- Python 3.8+
+- Python 3.8以上
 
-Recommended:
-- 16GB+ RAM
-- GPU with CUDA support or Apple Silicon
+推奨要件：
+- 16GB以上のRAM
+- GPU（CUDA対応またはApple Silicon）
 
-The training script automatically adapts to available hardware.
+## ライセンス
 
-## Results
+MIT License
 
-The YOLOv8 model achieves high accuracy in detecting and segmenting field elements. Example results can be found in the `runs/segment/` directory after training.
+## 謝辞
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- Dataset provided by [Roboflow](https://roboflow.com)
-- Built with [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics)
-
-## Citation
-
-If you use this project in your research, please cite:
-
-```bibtex
-@software{text2field2024,
-  title={Text2Field: Soccer Field Element Detection and Segmentation},
-  author={Your Name},
-  year={2024},
-  version={0.1}
-}
-```
+- データセット提供：[Roboflow](https://roboflow.com)
+- 使用フレームワーク：[Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics)
