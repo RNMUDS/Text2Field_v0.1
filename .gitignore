@@ -120,3 +120,5 @@ output.png
 result.jpg
 !sample*.png
 !annotated_sample*.png
+
+*.png
