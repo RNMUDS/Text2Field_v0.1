@@ -4,89 +4,133 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a soccer field detection and segmentation project using computer vision and deep learning approaches. The project aims to detect and segment various elements of a soccer field from images and videos.
+Soccer field detection and segmentation project demonstrating the limitations of classical computer vision and the effectiveness of deep learning (YOLOv8) for field element detection.
 
 ## Key Commands
 
 ### Environment Setup
 ```bash
-# Install ultralytics for YOLOv8
-pip install ultralytics
+# Install all dependencies at once
+pip install -r requirements.txt
 
-# Install OpenCV for computer vision tasks
-pip install opencv-python
-
-# Install other dependencies
-pip install matplotlib numpy pyyaml psutil ipywidgets
+# Or install core packages manually
+pip install ultralytics opencv-python matplotlib numpy pyyaml psutil ipywidgets roboflow
 ```
 
-### Running Detection/Segmentation
+### Running Inference
 
-**Computer Vision Approach (Classical):**
-```bash
-python cv_ellipse_detection.py
-```
-
-**Deep Learning Approach (YOLOv8):**
+**Quick Inference (Jupyter Notebook):**
 ```python
-# Use the inference function in DL_ellipse_detection.ipynb
-# The model automatically detects the latest trained model in runs/segment/
+# In DL_ellipse_detection.ipynb
+results = inference_jupyter("sample1.png")  # Auto-detects latest model
+```
+
+**Classical CV Demo (Shows Poor Performance):**
+```bash
+python cv_ellipse_detection.py  # Outputs to output.png
 ```
 
 ### Training Models
+
+**Automatic Adaptive Training:**
 ```python
-# Use the YOLOv8MPSTrainerAuto class in DL_learning_model.ipynb
-# It automatically adapts to system memory and hardware capabilities
+# In DL_learning_model.ipynb
+trainer = YOLOv8MPSTrainerAuto(dataset_path="./field-6")
+model_path, results = trainer.train_adaptive(
+    model_size='auto',  # 'n', 's', 'm', 'l', 'x', or 'auto'
+    epochs=100,
+    imgsz=640
+)
 ```
 
-## Project Architecture
+**Download Dataset from Roboflow:**
+```python
+from roboflow import Roboflow
+rf = Roboflow(api_key="your_api_key")
+project = rf.workspace("yssp").project("field-xzc0o")
+dataset = project.version(6).download("yolov8")
+```
 
-### Core Components
+## Architecture Details
 
-1. **cv_ellipse_detection.py**: Classical computer vision approach for detecting center circles using HSV color space and ellipse fitting. Currently has issues with accurate ellipse detection.
+### Key Functions and Classes
 
-2. **DL_ellipse_detection.ipynb**: YOLOv8-based inference notebook for field segmentation. Contains:
-   - Simple inference function
-   - Jupyter-friendly inference with automatic model detection
-   - Interactive UI for file uploads
+**`inference_jupyter(image_path, model_path=None)`** - Main inference function
+- Auto-detects latest model in `runs/segment/*/weights/best.pt`
+- Returns YOLO results object
+- Saves annotated image to `result.jpg`
+- Displays side-by-side comparison in Jupyter
 
-3. **DL_learning_model.ipynb**: YOLOv8 training notebook with memory-adaptive configuration. Features:
-   - Automatic system profiling (memory, CPU, GPU)
-   - Dynamic batch size and model selection based on available resources
-   - Support for Apple Silicon MPS, CUDA, and CPU
+**`YOLOv8MPSTrainerAuto`** - Adaptive training class
+- Automatically profiles system (memory, CPU, GPU)
+- Selects optimal model size based on available memory:
+  - 64GB+: Large (l)
+  - 32-64GB: Medium (m)
+  - 16-32GB: Small (s)
+  - <16GB: Nano (n)
+- Configures batch size, workers, and caching strategy
+- Handles MPS (Apple Silicon), CUDA, and CPU
 
-### Dataset Structure
+### Dataset Organization
 
-The project uses a Roboflow dataset (`field-6/`) with 7 classes:
-- 18Yard
-- 18Yard Circle  
-- 5Yard
-- First Half Central Circle
-- First Half Field
-- Second Half Central Circle
-- Second Half Field
+```
+field-6/
+├── data.yaml           # Class definitions and paths
+├── train/
+│   ├── images/        # Training images (excluded from git)
+│   └── labels/        # YOLO format annotations
+├── valid/
+│   ├── images/        # Validation images (excluded from git)
+│   └── labels/        # YOLO format annotations
+└── test/
+    ├── images/        # Test images (excluded from git)
+    └── labels/        # YOLO format annotations
+```
 
-Dataset splits:
-- Train: 2523 images
-- Valid: 161 images
-- Test: 101 images
+### Model Output Structure
 
-### Model Storage
+```
+runs/segment/
+├── field_seg_auto_l_20250803_040736/
+│   ├── weights/
+│   │   ├── best.pt    # Best model weights
+│   │   └── last.pt    # Last epoch weights
+│   ├── args.yaml      # Training configuration
+│   ├── results.csv    # Training metrics
+│   └── train_batch*.jpg  # Training visualizations
+```
 
-Trained models are stored in `runs/segment/` with the following naming convention:
-- `field_seg_auto_{model_size}_{timestamp}/`
-- Best model weights: `weights/best.pt`
+## Important Implementation Details
 
-## Key Technical Considerations
+### Memory Optimization (MPS/Apple Silicon)
+```python
+os.environ['PYTORCH_MPS_HIGH_WATERMARK_RATIO'] = '0.0'
+os.environ['PYTORCH_ENABLE_MPS_FALLBACK'] = '1'
+```
 
-1. **Memory Management**: The training script automatically adapts to available system memory (especially important for Apple Silicon unified memory).
+### Default Training Parameters
+- Optimizer: AdamW
+- Learning rate: 0.01
+- Image augmentation: Mosaic, flip, scale
+- NMS IOU threshold: 0.7
+- Confidence threshold: 0.25 (inference)
 
-2. **MPS Support**: Full support for Apple Silicon GPU acceleration with appropriate environment variables set.
+### Class IDs
+```
+0: 18Yard
+1: 18Yard Circle
+2: 5Yard
+3: First Half Central Circle
+4: First Half Field
+5: Second Half Central Circle
+6: Second Half Field
+```
 
-3. **Adaptive Training**: The `YOLOv8MPSTrainerAuto` class automatically selects optimal:
-   - Model size (n/s/m/l/x based on memory)
-   - Batch size
-   - Worker threads
-   - Cache strategy
+### Known Issues
+- `cv_ellipse_detection.py` fails with partial occlusions and lighting variations
+- Large models (x) may require 128GB+ unified memory on Apple Silicon
+- Dataset images are large (~1.9GB for training set)
 
-4. **Data Augmentation**: Configured for soccer field imagery with appropriate augmentation parameters.
+## Roboflow Integration
+
+Project uses Roboflow dataset `field-xzc0o` version 6. Search Roboflow Universe for similar datasets using keywords: `soccer field`, `football pitch`, `soccer segmentation`.
